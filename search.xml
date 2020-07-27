@@ -2,7 +2,7 @@
 <search>
   <entry>
     <title>插入排序及归并排序</title>
-    <url>/2020/07/25/2020-7-25-how-to-sort/</url>
+    <url>/posts/50d558e/</url>
     <content><![CDATA[<h1 id="将输入的数组从小到大排序"><a href="#将输入的数组从小到大排序" class="headerlink" title="将输入的数组从小到大排序"></a>将输入的数组从小到大排序</h1><figure class="highlight python"><table><tr><td class="code"><pre><span class="line">a = input(<span class="string">'请输入要排序的数组（请用逗号或空格将数字分开）：'</span>)</span><br><span class="line">pre_list = a.split(<span class="string">','</span> <span class="keyword">or</span> <span class="string">' '</span>)</span><br><span class="line"><span class="keyword">try</span>:</span><br><span class="line">    list = [int(x) <span class="keyword">for</span> x <span class="keyword">in</span> pre_list]</span><br><span class="line">    <span class="keyword">for</span> l <span class="keyword">in</span> range(<span class="number">1</span>, len(list)):</span><br><span class="line">        <span class="keyword">while</span> list[l] &lt; list[l - <span class="number">1</span>] <span class="keyword">and</span> l &gt; <span class="number">0</span>:</span><br><span class="line">            list[l], list[l - <span class="number">1</span>] = list[l - <span class="number">1</span>], list[l]</span><br><span class="line">            l -= <span class="number">1</span></span><br><span class="line">    print(list)</span><br><span class="line"><span class="keyword">except</span>:</span><br><span class="line">    print(<span class="string">'请输入数字并用","or" "将数字分开'</span>)</span><br></pre></td></tr></table></figure>
 
 

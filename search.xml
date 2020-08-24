@@ -23,7 +23,7 @@
 <script type="math/tex; mode=display">
 P_i=\frac{N_i}{N}</script><p>​        图像灰度的均值为:</p>
 <script type="math/tex; mode=display">
-Avg = \sum_{i=0}^{m-1}{i*Pi}</script><p>​        这里先定义阈值为thr, 则thr将图像分为前景(foreground, fg)和背景(blackground, bg), 两者占比分别为$P{fg}$和$P{bg}$, 前景和背景的灰度均值为$Avg{fg}$和$Avg{bg}$则有:</p>
+Avg = \sum_{i=0}^{m-1}{i*Pi}</script><p>​        这里先定义阈值为thr, 则thr将图像分为前景(foreground, fg)和背景(blackground, bg), 两者占比分别为$P_{fg}$和$P_{bg}$, 前景和背景的灰度均值为$Avg_{fg}$和$Avg_{bg}$则有:</p>
 <script type="math/tex; mode=display">
 P_{fg}=\sum_{i=0}^{thr}Pi</script><script type="math/tex; mode=display">
 P_{bg}=1-\sum_{i=0}^{thr}Pi</script><script type="math/tex; mode=display">

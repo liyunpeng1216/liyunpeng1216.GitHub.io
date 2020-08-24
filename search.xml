@@ -19,6 +19,7 @@
     <url>/posts/e13fdafb/</url>
     <content><![CDATA[<p>​        博主近期需要处理原子力显微镜图，测量AFM相图中片晶厚度，本着一劳永逸的想法，直接代码实现这个目标。这里博主放上实现这个目标基础但很关键的一步代码，即通过大津算法（OTSU算法）求出图片前景和背景的阈值，并基于此对图像进行分割处理，已实现后面对图片中信息的处理和挖掘。</p>
 <p>​       这里博主编写的是单阈值OTSU法，采用的是面向对象的写法。首先简单介绍一下OTUS算法的原理，一张图片粗略来分可以分为前景和背景，当两部分类间方差最大时，对应的阈值（threshold)即为二分的最佳阈值。具体数学实现过程如下：</p>
+<p>$N_0$</p>
 <script type="math/tex; mode=display">
 首先将图像灰度化（0-255），假设图中包含m个灰度级，各个灰度级像素点数分别为N_0,N_1,...,N_{m-1},那么灰度值为i(i\epsilon m)的占比P_i为:</script><script type="math/tex; mode=display">
 P_i=\frac{N_i}{N}</script><script type="math/tex; mode=display">

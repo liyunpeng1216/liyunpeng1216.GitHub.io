@@ -6,7 +6,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="http://www.ypli1216.top/"/>
-  <updated>2021-07-02T06:43:22.542Z</updated>
+  <updated>2021-07-03T08:31:29.832Z</updated>
   <id>http://www.ypli1216.top/</id>
   
   <author>
@@ -17,13 +17,38 @@
   <generator uri="https://hexo.io/">Hexo</generator>
   
   <entry>
+    <title>电子衍射点标定的python语言描述</title>
+    <link href="http://www.ypli1216.top/posts/c3463f90/"/>
+    <id>http://www.ypli1216.top/posts/c3463f90/</id>
+    <published>2021-07-03T07:12:08.515Z</published>
+    <updated>2021-07-03T08:31:29.832Z</updated>
+    
+    <content type="html"><![CDATA[<p>由于博主在实验过程中需要大量使用透射电镜，尤其是明场(Bright-field)和电子衍射(Electron diffraction)。为了大大减轻标定电子衍射点的工程，博主决定编写一个自动标定电子衍射的工具。</p><p>在具体介绍代码之前有必要先讲一下手动标定电子衍射的过程，如果不了解电子衍射标定原理的也不要紧，后面我会专门介绍电子衍射的原理。电子衍射是用来判断高分子结晶晶型的重要工具，正常拍完电子衍射后，CCD相机配套的软件都会根据已有的数据把标尺加到图上。如下图是取向聚1-丁烯薄膜的电子衍射图，图中左下角2 1/nm是标尺，不过这个是倒易空间的标尺，与传统的实空间的标尺并不一样，它的单位是1/nm，图中2 1/nm表示标尺的像素距离长度对应实空间的1/2 nm。原理以后再行解释，这里简单说一下，方便大家理解如何通过标尺计算晶面距离。</p><p><img src="/posts/c3463f90/PE.jpg" alt></p><p>DigitalMicrograph(简称DM软件)可以用来完成标定过程。当我们将dm3格式的数据导入软件中时，先确定衍射中心，之后在用鼠标点击衍射点的同时就会给出每个点对应晶面的实空间的距离。每个晶型有对应的晶胞参数，根据晶胞参数可以获悉各晶面对应的理论晶面间距，将实际标定出来的晶面间距与理论晶面间距对比，若是误差在0.05 Å以内，即可判定为同一晶面。有了DM软件似乎标定过程非常简单，但是有一个问题，如果你没有源格式文件，只有一张普通的 jpg/png/tif 图片，那么上述过程只是一句空话。因此这篇博文就是为了实现普通图片格式的电子衍射图片进行标定而写的。你也可以把下面的代码理解为一个API，而它的作用就是让你如同使用软件那样方便的实现上述标定过程。具体代码如下：</p><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> cv2</span><br><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"><span class="keyword">import</span> math</span><br><span class="line"></span><br><span class="line"><span class="comment"># 确定衍射中心，正常是先运行一部分代码把衍射中心标出来，输入下面的语句里</span></span><br><span class="line">centre_weight = <span class="number">1947</span></span><br><span class="line">centre_height = <span class="number">1393</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># scale_1_nm_1 = 186.70691058147796</span></span><br><span class="line"><span class="comment"># 这个参数代表了电子衍射图中晶面间距为1 nm时像素点距离（即多少个像素点代表1 nm），这个从图中的标尺就可以确定的</span></span><br><span class="line">scale_1_nm_1 = <span class="number">188.2</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">## scale_1_nm_1 = 184.90267399364456</span></span><br><span class="line"><span class="comment"># scale_1_nm_1 = 1501.8995768163063</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">on_EVENT_LBUTTONDOWN</span><span class="params">(event, x, y, flags, param)</span>:</span></span><br><span class="line">    <span class="string">"""在图片中绘制坐标和晶面距离，括号里前两个数字分别代表衍射点在图中的像素坐标，第三个数字代表了根据标尺标定出来的晶面距离"""</span></span><br><span class="line">    <span class="keyword">if</span> event == cv2.EVENT_LBUTTONDOWN:</span><br><span class="line">        d = crystal_distance(x, y)</span><br><span class="line">        xy = <span class="string">"%d, %d, %.4f"</span> % (x, y, d)</span><br><span class="line">        cv2.circle(fic, (x, y), <span class="number">1</span>, (<span class="number">255</span>, <span class="number">0</span>, <span class="number">0</span>), thickness = <span class="number">-1</span>)</span><br><span class="line">        cv2.putText(fic, xy, (x, y), cv2.FONT_HERSHEY_PLAIN,</span><br><span class="line">                    <span class="number">2.0</span>, (<span class="number">255</span>, <span class="number">255</span>, <span class="number">255</span>), thickness = <span class="number">2</span>)</span><br><span class="line">        cv2.imshow(<span class="string">"result"</span>, fic)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">crystal_distance</span><span class="params">(x, y)</span>:</span></span><br><span class="line">    <span class="string">"""计算像素距离，并将之转化为实际晶面距离"""</span></span><br><span class="line">    d = math.sqrt((x-centre_weight)**<span class="number">2</span> + (y-centre_height)**<span class="number">2</span>)</span><br><span class="line">    d = scale_1_nm_1 / d</span><br><span class="line">    <span class="keyword">return</span> d</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">while</span>(<span class="literal">True</span>):</span><br><span class="line">    fic = cv2.imread(<span class="string">'pvdf-pllagonghun04.tif'</span>)</span><br><span class="line">    cv2.namedWindow(<span class="string">'result'</span>, cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)</span><br><span class="line">    cv2.setMouseCallback(<span class="string">"result"</span>, on_EVENT_LBUTTONDOWN)</span><br><span class="line">    cv2.imshow(<span class="string">"result"</span>, fic)</span><br><span class="line">    <span class="keyword">if</span> cv2.waitKey(<span class="number">0</span>) &amp; <span class="number">0xFF</span>==<span class="number">27</span>:</span><br><span class="line">        <span class="keyword">break</span></span><br><span class="line">cv2.destroyAllWindows()</span><br></pre></td></tr></table></figure><p>需要注意的是，代码需要运行两遍。第一遍是为了确定衍射点的像素坐标，将其替换代码中的数值后就可以开始标定电子衍射了。</p><p>当然如果有什么问题也可以留言给博主，我看到之后会回复的。这篇写的稍简单，如果没有基础的话可能会比较吃力，有基础的话应该没什么问题。另外需要解释一下的是因为博主主要做的是科研，业余码农，因此写的并不是那么的pythonic,若有不妥之处，诸位大家体谅。若是对诸君有些许帮助，本人不甚荣幸。</p>]]></content>
+    
+    <summary type="html">
+    
+      python编写的半自动电子衍射标定
+    
+    </summary>
+    
+    
+      <category term="电子衍射标定" scheme="http://www.ypli1216.top/categories/%E7%94%B5%E5%AD%90%E8%A1%8D%E5%B0%84%E6%A0%87%E5%AE%9A/"/>
+    
+    
+      <category term="python" scheme="http://www.ypli1216.top/tags/python/"/>
+    
+      <category term="电子衍射图片处理" scheme="http://www.ypli1216.top/tags/%E7%94%B5%E5%AD%90%E8%A1%8D%E5%B0%84%E5%9B%BE%E7%89%87%E5%A4%84%E7%90%86/"/>
+    
+  </entry>
+  
+  <entry>
     <title>MySQL使用过程中遇到的那些问题-因数据类型导致存储数值变化引起的数据修改提交失败</title>
     <link href="http://www.ypli1216.top/posts/65b23686/"/>
     <id>http://www.ypli1216.top/posts/65b23686/</id>
     <published>2021-06-25T02:27:17.982Z</published>
-    <updated>2021-07-02T06:43:22.542Z</updated>
+    <updated>2021-07-03T07:15:47.654Z</updated>
     
-    <content type="html"><![CDATA[<p>​        博主在实验闲暇之余做了个药品管理系统，组成为自己编写的客户端+云MySQL数据库。其目的是为了实现药品购入信息录入、位置查询以及剩余量统计。在编写的过程中发现了这么个问题，在实验上待过的都知道，化学药品一般有唯有识别号，即CAS号。但是并不是所有的药品都有CAS号，这个问题可以用实验室内部编号解决。但是还有另外一个要解决的问题是不同规格的药品对应同一个CAS号，最简单的就是分子量和等规度不同的药品CAS号是一样的。因此博主在解决药品查询和取用的时候需要实现多条件查询。那么问题来了，药品的购买量可能是一样的，但是随着药品的使用，剩余量和已取用量肯定是不一样的。因此博主用CAS和批号做联合主键，加上这两个条件作为药品查询和取用的条件。但是在测试过程中问题来了，查询和取用后数据库里的数据没有任何变化。找寻了很久发现是数据类型引起的，博主把药品剩余量和取用量都设为float型，而float型会带来误差。所以通常设为decimal来避免这个问题。不过楼主选择了另一种减少代码量的方法，即另选了两个字段(字符串类型)。</p>]]></content>
+    <content type="html"><![CDATA[<p>博主在实验闲暇之余做了个药品管理系统，组成为自己编写的客户端+云MySQL数据库。其目的是为了实现药品购入信息录入、位置查询以及剩余量统计。在编写的过程中发现了这么个问题，在实验上待过的都知道，化学药品一般有唯有识别号，即CAS号。但是并不是所有的药品都有CAS号，这个问题可以用实验室内部编号解决。但是还有另外一个要解决的问题是不同规格的药品对应同一个CAS号，最简单的就是分子量和等规度不同的药品CAS号是一样的。因此博主在解决药品查询和取用的时候需要实现多条件查询。那么问题来了，药品的购买量可能是一样的，但是随着药品的使用，剩余量和已取用量肯定是不一样的。因此博主用CAS和批号做联合主键，加上这两个条件作为药品查询和取用的条件。但是在测试过程中问题来了，查询和取用后数据库里的数据没有任何变化。找寻了很久发现是数据类型引起的，博主把药品剩余量和取用量都设为float型，而float型会带来误差。所以通常设为decimal来避免这个问题。不过楼主选择了另一种减少代码量的方法，即另选了两个字段(字符串类型)。</p>]]></content>
     
     <summary type="html">
     

@@ -75,7 +75,7 @@ Avg_{bg}=\frac{Avg-\sum_{i=0}^{thr}{i*Pi}}{P_{bg}}</script><p>​        定义�
       </categories>
       <tags>
         <tag>python</tag>
-        <tag>电子衍射图片处理</tag>
+        <tag>图像处理</tag>
       </tags>
   </entry>
   <entry>
